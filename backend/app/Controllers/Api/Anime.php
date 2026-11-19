@@ -52,16 +52,22 @@ class Anime extends ResourceController
         return max(1, min($perPage, 100));
     }
 
-    // GET /api/anime (opsional: ?q=kata_kunci&page=1&per_page=20)
+    // GET /api/anime (opsional: ?q=kata_kunci&type_id=2&page=1&per_page=20)
     public function index()
     {
-        $q = $this->request->getGet('q');
+        $q      = $this->request->getGet('q');
+        $typeId = $this->request->getGet('type_id');
 
         if ($q) {
             $this->model->groupStart()
                 ->like('title', $q, 'both', null, true)            // tidak case-sensitive
                 ->orLike('title_english', $q, 'both', null, true)
                 ->groupEnd();
+        }
+
+        // Filter opsional berdasarkan tipe media (1: TV, 2: Movie, 3: OVA, dll.)
+        if ($typeId !== null && ctype_digit((string) $typeId)) {
+            $this->model->where('type_id', (int) $typeId);
         }
 
         $data = $this->model->orderBy('anime_id', 'ASC')->paginate($this->getPerPage());

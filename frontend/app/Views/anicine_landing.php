@@ -819,6 +819,37 @@
             color: var(--text-muted);
         }
 
+        /* Pagination Bar */
+        .pagination-bar {
+            margin-top: 28px;
+            padding: 14px 18px;
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-inner);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .pagination-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Live JSON API Inspector Drawer */
         .json-drawer-section {
             margin-top: 56px;
@@ -827,6 +858,36 @@
             border-radius: var(--radius-outer);
             padding: 24px;
             border: 1px solid var(--border-dark);
+        }
+
+        .inspector-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .inspector-tab-btn {
+            background-color: var(--bg-charcoal-elevated);
+            color: #D6D3D1;
+            border: 1px solid var(--border-dark);
+            border-radius: var(--radius-pill);
+            padding: 6px 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .inspector-tab-btn:hover {
+            border-color: rgba(253, 164, 175, 0.5);
+            color: #FFFFFF;
+        }
+
+        .inspector-tab-btn.active {
+            background-color: var(--brand-crimson);
+            border-color: var(--brand-crimson);
+            color: #FFFFFF;
         }
 
         .json-pre {
@@ -934,6 +995,12 @@
                 </form>
 
                 <div class="filter-controls">
+                    <select id="type-filter" class="year-select tabular-nums" aria-label="Filter Tipe Media">
+                        <option value="">Semua Tipe Media</option>
+                        <option value="2">Movie (Layar Lebar)</option>
+                        <option value="1">TV Series</option>
+                        <option value="3">OVA</option>
+                    </select>
                     <select id="year-filter" class="year-select tabular-nums" aria-label="Filter Tahun Rilis">
                         <option value="">Semua Tahun (/api/anime)</option>
                         <option value="2016">Rilis Tahun 2016 (/tahun/2016)</option>
@@ -985,14 +1052,30 @@
                 <!-- Diisi secara dinamis -->
             </div>
 
+            <!-- Pagination Bar -->
+            <div class="pagination-bar" id="catalog-pagination" style="display: none;">
+                <span class="pagination-info tabular-nums" id="pagination-info">Halaman 1 dari 1</span>
+                <div class="pagination-actions">
+                    <button type="button" id="btn-prev-page" class="btn btn-secondary">Sebelumnya</button>
+                    <button type="button" id="btn-next-page" class="btn btn-secondary">Berikutnya</button>
+                </div>
+            </div>
+
             <!-- Live JSON Response Inspector -->
             <section class="json-drawer-section" id="json-inspector">
                 <div class="section-heading-row" style="margin-bottom: 0;">
                     <div>
                         <h3 class="spotlight-title" style="font-size: 20px;">Payload JSON Asli dari Endpoint REST API</h3>
-                        <p class="section-subtitle" style="color: #A8A29E;">Bukti integrasi data mentah yang dikembalikan oleh controller CodeIgniter 4</p>
+                        <p class="section-subtitle" style="color: #A8A29E;">Bukti integrasi data mentah yang dikembalikan oleh Server Backend (Port 8080)</p>
                     </div>
                     <span class="endpoint-pill tabular-nums" id="json-endpoint-badge">GET /api/anime/32281</span>
+                </div>
+                <div class="inspector-tabs" id="inspector-tabs">
+                    <button type="button" class="inspector-tab-btn active" data-inspector-mode="active_anime">Detail Anime Aktif</button>
+                    <button type="button" class="inspector-tab-btn" data-endpoint="/api/anime/theatrical">/api/anime/theatrical</button>
+                    <button type="button" class="inspector-tab-btn" data-endpoint="/api/cinema/status">/api/cinema/status</button>
+                    <button type="button" class="inspector-tab-btn" data-endpoint="/api/cinema/showtimes">/api/cinema/showtimes</button>
+                    <button type="button" class="inspector-tab-btn" data-endpoint="/api/cinema/studios">/api/cinema/studios</button>
                 </div>
                 <pre class="json-pre tabular-nums" id="json-output-box">Memuat payload JSON...</pre>
             </section>
@@ -1463,9 +1546,81 @@
             }).join("");
         }
 
+        let currentPage = 1;
+        let totalPages = 1;
+        let lastCatalogLabel = "";
+
+        function renderPagination(pager) {
+            const bar = document.getElementById("catalog-pagination");
+            const info = document.getElementById("pagination-info");
+            const prevBtn = document.getElementById("btn-prev-page");
+            const nextBtn = document.getElementById("btn-next-page");
+
+            if (!pager || !pager.total_pages || pager.total_pages <= 1) {
+                bar.style.display = "none";
+                return;
+            }
+
+            currentPage = Number(pager.current_page) || 1;
+            totalPages = Number(pager.total_pages) || 1;
+
+            bar.style.display = "flex";
+            info.textContent = `Halaman ${currentPage} dari ${totalPages} (Total ${Number(pager.total_data || 0).toLocaleString("id-ID")} anime)`;
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+
+        function buildCatalogUrl(page = 1) {
+            const yr = document.getElementById("year-filter").value;
+            if (yr) {
+                return `/api/anime/tahun/${yr}?page=${page}&per_page=10`;
+            }
+
+            const params = new URLSearchParams();
+            params.set("page", String(page));
+            params.set("per_page", "10");
+
+            const q = document.getElementById("search-input").value.trim();
+            if (q) {
+                params.set("q", q);
+            }
+
+            const typeId = document.getElementById("type-filter").value;
+            if (typeId) {
+                params.set("type_id", typeId);
+            }
+
+            return `/api/anime?${params.toString()}`;
+        }
+
+        function setActiveInspectorTab(modeOrEndpoint) {
+            document.querySelectorAll("#inspector-tabs .inspector-tab-btn").forEach(btn => {
+                const isMatch = (btn.dataset.inspectorMode === modeOrEndpoint) || (btn.dataset.endpoint === modeOrEndpoint);
+                btn.classList.toggle("active", isMatch);
+            });
+        }
+
+        async function inspectEndpoint(endpoint) {
+            setActiveInspectorTab(endpoint);
+            document.getElementById("json-endpoint-badge").textContent = `GET ${endpoint}`;
+            document.getElementById("json-output-box").textContent = "Mengambil respons JSON dari server backend...";
+
+            try {
+                const res = await fetch(`${API_BASE_URL}${endpoint}`);
+                const json = await res.json();
+                document.getElementById("json-output-box").textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                document.getElementById("json-output-box").textContent = JSON.stringify({
+                    error: "Gagal terhubung ke server backend (" + API_BASE_URL + ")",
+                    endpoint: endpoint
+                }, null, 2);
+            }
+        }
+
         async function selectAnimeDetail(animeId) {
             activeAnimeId = Number(animeId);
             renderTheatricalStrip();
+            setActiveInspectorTab("active_anime");
 
             const endpoint = `/api/anime/${animeId}`;
             try {
@@ -1517,10 +1672,12 @@
             await selectAnimeDetail(activeAnimeId);
 
             // 3. Muat katalog umum (/api/anime?page=1&per_page=10)
-            await loadCatalog("/api/anime?page=1&per_page=10", "Menampilkan data live dari endpoint GET /api/anime?page=1&per_page=10");
+            const initialUrl = buildCatalogUrl(1);
+            await loadCatalog(initialUrl, `Menampilkan data live dari endpoint GET ${initialUrl}`);
         }
 
         async function loadCatalog(url, label) {
+            lastCatalogLabel = label;
             document.getElementById("active-endpoint-label").textContent = url;
             try {
                 const res = await fetch(`${API_BASE_URL}${url}`);
@@ -1528,6 +1685,7 @@
                     const json = await res.json();
                     if (json && Array.isArray(json.data)) {
                         renderCatalogGrid(json.data, label);
+                        renderPagination(json.pager || null);
                         return;
                     }
                 }
@@ -1535,21 +1693,43 @@
 
             // Fallback katalog
             renderCatalogGrid([...theatricalList, FALLBACK_TV_NARUTO], label + " (Data Pratinjau)");
+            renderPagination(null);
         }
 
         document.getElementById("search-form").addEventListener("submit", function(e) {
             e.preventDefault();
-            const q = document.getElementById("search-input").value.trim();
-            const url = q ? `/api/anime?q=${encodeURIComponent(q)}` : `/api/anime?page=1&per_page=10`;
-            loadCatalog(url, `Hasil pencarian katalog dari GET ${url}`);
+            document.getElementById("year-filter").value = "";
+            const url = buildCatalogUrl(1);
+            loadCatalog(url, `Hasil filter katalog dari GET ${url}`);
+        });
+
+        document.getElementById("type-filter").addEventListener("change", function() {
+            document.getElementById("year-filter").value = "";
+            const url = buildCatalogUrl(1);
+            loadCatalog(url, `Filter tipe media dari GET ${url}`);
         });
 
         document.getElementById("year-filter").addEventListener("change", function(e) {
             const yr = e.target.value;
-            if (!yr) {
-                loadCatalog("/api/anime?page=1&per_page=10", "Menampilkan katalog dari GET /api/anime?page=1&per_page=10");
-            } else {
-                loadCatalog(`/api/anime/tahun/${yr}`, `Filter anime rilis tahun ${yr} dari GET /api/anime/tahun/${yr}`);
+            if (yr) {
+                document.getElementById("search-input").value = "";
+                document.getElementById("type-filter").value = "";
+            }
+            const url = buildCatalogUrl(1);
+            loadCatalog(url, yr ? `Filter anime rilis tahun ${yr} dari GET ${url}` : `Menampilkan katalog dari GET ${url}`);
+        });
+
+        document.getElementById("btn-prev-page").addEventListener("click", function() {
+            if (currentPage > 1) {
+                const url = buildCatalogUrl(currentPage - 1);
+                loadCatalog(url, `Menampilkan halaman ${currentPage - 1} dari GET ${url}`);
+            }
+        });
+
+        document.getElementById("btn-next-page").addEventListener("click", function() {
+            if (currentPage < totalPages) {
+                const url = buildCatalogUrl(currentPage + 1);
+                loadCatalog(url, `Menampilkan halaman ${currentPage + 1} dari GET ${url}`);
             }
         });
 
@@ -1560,8 +1740,20 @@
 
         document.getElementById("btn-reset-catalog").addEventListener("click", function() {
             document.getElementById("search-input").value = "";
+            document.getElementById("type-filter").value = "";
             document.getElementById("year-filter").value = "";
-            loadCatalog("/api/anime?page=1&per_page=10", "Menampilkan katalog dari GET /api/anime?page=1&per_page=10");
+            const url = buildCatalogUrl(1);
+            loadCatalog(url, `Menampilkan katalog dari GET ${url}`);
+        });
+
+        document.querySelectorAll("#inspector-tabs .inspector-tab-btn").forEach(btn => {
+            btn.addEventListener("click", function() {
+                if (this.dataset.inspectorMode === "active_anime") {
+                    selectAnimeDetail(activeAnimeId);
+                } else if (this.dataset.endpoint) {
+                    inspectEndpoint(this.dataset.endpoint);
+                }
+            });
         });
 
         loadInitialData();
