@@ -1,0 +1,49 @@
+#--------------------------------------------------------------------
+# Example Environment Configuration file (AniCine Backend REST API)
+#--------------------------------------------------------------------
+
+#--------------------------------------------------------------------
+# ENVIRONMENT
+#--------------------------------------------------------------------
+
+# CI_ENVIRONMENT = development
+
+#--------------------------------------------------------------------
+# APP (Backend Server - Port 8080)
+#--------------------------------------------------------------------
+
+# app.baseURL = 'http://localhost:8080/'
+
+#--------------------------------------------------------------------
+# DATABASE UTAMA: db_anitrack (PostgreSQL Lokal)
+#--------------------------------------------------------------------
+
+# database.default.hostname = localhost
+# database.default.database = db_anitrack
+# database.default.username = postgres
+# database.default.password = basisdata
+# database.default.DBDriver = Postgre
+# database.default.DBPrefix =
+# database.default.port     = 5432
+# database.default.schema   = anitrack
+# database.default.charset  = utf8
+
+#--------------------------------------------------------------------
+# DATABASE BIOSKOP PARTNER: db_bioskop (PostgreSQL Lokal / Fallback)
+#--------------------------------------------------------------------
+
+# database.bioskop.hostname = localhost
+# database.bioskop.database = db_bioskop
+# database.bioskop.username = postgres
+# database.bioskop.password = basisdata
+# database.bioskop.DBDriver = Postgre
+# database.bioskop.port     = 5432
+# database.bioskop.schema   = public
+# database.bioskop.charset  = utf8
+
+#--------------------------------------------------------------------
+# CINEMA EXTERNAL API (Partner Sat)
+# Kosongkan jika menggunakan database lokal db_bioskop.
+#--------------------------------------------------------------------
+
+# cinema.api.baseURL = ''

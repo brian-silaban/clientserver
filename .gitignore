@@ -1,0 +1,111 @@
+#-------------------------
+# Operating Specific Junk Files
+#-------------------------
+
+# OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+#-------------------------
+# Environment Files (Backend & Frontend)
+#-------------------------
+# Never commit .env files (contains DB passwords / API keys)
+.env
+backend/.env
+frontend/.env
+.vagrant
+Vagrantfile
+
+#-------------------------
+# Temporary Files (Backend & Frontend)
+#-------------------------
+backend/writable/cache/*
+!backend/writable/cache/index.html
+frontend/writable/cache/*
+!frontend/writable/cache/index.html
+
+backend/writable/logs/*
+!backend/writable/logs/index.html
+frontend/writable/logs/*
+!frontend/writable/logs/index.html
+
+backend/writable/session/*
+!backend/writable/session/index.html
+frontend/writable/session/*
+!frontend/writable/session/index.html
+
+backend/writable/uploads/*
+!backend/writable/uploads/index.html
+frontend/writable/uploads/*
+!frontend/writable/uploads/index.html
+
+backend/writable/debugbar/*
+!backend/writable/debugbar/index.html
+frontend/writable/debugbar/*
+!frontend/writable/debugbar/index.html
+
+php_errors.log
+**/php_errors.log
+
+#-------------------------
+# Test & Build Files
+#-------------------------
+**/tests/coverage*
+**/phpunit
+**/results/
+**/phpunit.xml
+**/build/
+
+#-------------------------
+# Composer Dependencies (Backend & Frontend)
+#-------------------------
+vendor/
+backend/vendor/
+frontend/vendor/
+
+#-------------------------
+# IDE / Development Files
+#-------------------------
+_modules/*
+.php-version
+.idea/
+*.iml
+/nbproject/
+/nbbuild/
+/dist/
+/nbdist/
+/nbactions.xml
+/nb-configuration.xml
+/.nb-gradle/
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+.phpintel
+.vscode/
+.agents
+tambah_anime_ke_bioskop.sql
+db_anitrack_dump.sql
+db_bioskop
+AGENTS.md
+arsitektur_dan_rancangan_projek.md
+Penduduk_DKI.sql

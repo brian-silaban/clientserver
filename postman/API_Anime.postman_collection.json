@@ -1,0 +1,133 @@
+{
+  "info": {
+    "name": "API Anime",
+    "description": "REST API CRUD tabel anitrack.anime (db_anitrack) - CodeIgniter 4 + PostgreSQL",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080/api" },
+    { "key": "new_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. GET semua data (paginasi)",
+      "request": { "method": "GET", "url": "{{base_url}}/anime?page=1&per_page=20" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+        "pm.test('Ada info pager', () => pm.expect(pm.response.json().pager).to.have.property('total_pages'));"
+      ] } }]
+    },
+    {
+      "name": "2. GET dengan pencarian",
+      "request": { "method": "GET", "url": "{{base_url}}/anime?q=naruto" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+      ] } }]
+    },
+    {
+      "name": "3. GET detail berdasarkan id",
+      "request": { "method": "GET", "url": "{{base_url}}/anime/20" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+        "pm.test('Judul Naruto', () => pm.expect(pm.response.json().data.title).to.eql('Naruto'));"
+      ] } }]
+    },
+    {
+      "name": "4. POST tambah data",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/anime",
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Anime Uji REST API CI4\",\n  \"title_english\": \"REST API Test Anime\",\n  \"type_id\": 1,\n  \"episodes\": 12,\n  \"status\": \"Currently Airing\",\n  \"aired_from\": \"2026-07-01\",\n  \"duration_min\": 24,\n  \"rating_id\": 3,\n  \"score\": 8.5,\n  \"premiered_season\": \"Summer\",\n  \"premiered_year\": 2026\n}", "options": { "raw": { "language": "json" } } }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+        "const res = pm.response.json();",
+        "pm.test('Judul sesuai input', () => pm.expect(res.data.title).to.eql('Anime Uji REST API CI4'));",
+        "pm.collectionVariables.set('new_id', res.data.anime_id);"
+      ] } }]
+    },
+    {
+      "name": "5. POST data tidak valid (uji validasi)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/anime",
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Naruto\",\n  \"type_id\": 99,\n  \"status\": \"Tamat\",\n  \"score\": 11,\n  \"premiered_season\": \"Autumn\"\n}", "options": { "raw": { "language": "json" } } }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+      ] } }]
+    },
+    {
+      "name": "6. PUT ubah seluruh data",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/anime/{{new_id}}",
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Anime Uji REST API CI4 (Revisi)\",\n  \"title_english\": \"REST API Test Anime Revised\",\n  \"type_id\": 1,\n  \"episodes\": 13,\n  \"status\": \"Finished Airing\",\n  \"aired_from\": \"2026-07-01\",\n  \"aired_to\": \"2026-09-30\",\n  \"duration_min\": 24,\n  \"rating_id\": 3,\n  \"score\": 8.75,\n  \"premiered_season\": \"Summer\",\n  \"premiered_year\": 2026\n}", "options": { "raw": { "language": "json" } } }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+      ] } }]
+    },
+    {
+      "name": "7. PATCH ubah sebagian kolom",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/anime/{{new_id}}",
+        "body": { "mode": "raw", "raw": "{ \"score\": 9.1 }", "options": { "raw": { "language": "json" } } }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+        "pm.test('Score berubah', () => pm.expect(pm.response.json().data.score).to.eql('9.10'));"
+      ] } }]
+    },
+    {
+      "name": "8. PUT dengan judul milik anime lain",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/anime/{{new_id}}",
+        "body": { "mode": "raw", "raw": "{ \"title\": \"Naruto\" }", "options": { "raw": { "language": "json" } } }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+      ] } }]
+    },
+    {
+      "name": "9. DELETE hapus data",
+      "request": { "method": "DELETE", "url": "{{base_url}}/anime/{{new_id}}" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+      ] } }]
+    },
+    {
+      "name": "10. GET data yang sudah dihapus",
+      "request": { "method": "GET", "url": "{{base_url}}/anime/{{new_id}}" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+      ] } }]
+    },
+    {
+      "name": "11. POST JSON rusak",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/anime",
+        "body": { "mode": "raw", "raw": "{title:", "options": { "raw": { "language": "json" } } }
+      },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));"
+      ] } }]
+    },
+    {
+      "name": "Bonus. GET anime per tahun",
+      "request": { "method": "GET", "url": "{{base_url}}/anime/tahun/2015" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('Status 200 OK', () => pm.response.to.have.status(200));"
+      ] } }]
+    }
+  ]
+}
