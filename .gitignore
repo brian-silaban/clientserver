@@ -102,11 +102,11 @@ _modules/*
 *.sublime-project
 .phpintel
 .vscode/
-.agents
 tambah_anime_ke_bioskop.sql
 db_anitrack_dump.sql
+db_anitrack_light.sql
 db_bioskop
-AGENTS.md
 arsitektur_dan_rancangan_projek.md
 Penduduk_DKI.sql
 test_api.php
+trim_anitrack_to_light.php

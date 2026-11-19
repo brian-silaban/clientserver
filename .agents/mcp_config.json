@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "postgres_anitrack": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:basisdata@localhost:5432/db_anitrack"
+      ]
+    },
+    "postgres_bioskop": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:basisdata@localhost:5432/db_bioskop"
+      ]
+    }
+  }
+}
