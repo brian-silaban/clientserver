@@ -81,11 +81,11 @@ php spark db:seed AniCineSeeder
 
 # 1. Menjalankan Server Backend REST API (Port 8080)
 cd backend
-php spark serve --port 8080
+php spark serve --port 8081
 
 # 2. Menjalankan Aplikasi Client Frontend Web (Port 8081)
 cd frontend
-php spark serve --port 8081
+php spark serve --port 8082
 
 # 3. Menjalankan pengujian cepat integrasi AnimeModel + CinemaService via CLI (dari root)
 php test_api.php
