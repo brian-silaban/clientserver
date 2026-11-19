@@ -9,19 +9,19 @@
 # CI_ENVIRONMENT = development
 
 #--------------------------------------------------------------------
-# APP (Backend Server - Port 8080)
+# APP (Backend Server - Port 8081)
 #--------------------------------------------------------------------
 
-# app.baseURL = 'http://localhost:8080/'
+# app.baseURL = 'http://70.153.136.38:8081/'
 
 #--------------------------------------------------------------------
 # DATABASE UTAMA: db_anitrack (PostgreSQL Lokal)
 #--------------------------------------------------------------------
 
-# database.default.hostname = localhost
+# database.default.hostname = 70.153.136.38
 # database.default.database = db_anitrack
-# database.default.username = postgres
-# database.default.password = basisdata
+# database.default.username = fann_user
+# database.default.password = (Hubungi Admin)
 # database.default.DBDriver = Postgre
 # database.default.DBPrefix =
 # database.default.port     = 5432
@@ -32,10 +32,10 @@
 # DATABASE BIOSKOP PARTNER: db_bioskop (PostgreSQL Lokal / Fallback)
 #--------------------------------------------------------------------
 
-# database.bioskop.hostname = localhost
+# database.bioskop.hostname = 70.153.136.38
 # database.bioskop.database = db_bioskop
-# database.bioskop.username = postgres
-# database.bioskop.password = basisdata
+# database.bioskop.username = fann_user
+# database.bioskop.password = (Hubungi Admin)
 # database.bioskop.DBDriver = Postgre
 # database.bioskop.port     = 5432
 # database.bioskop.schema   = public
