@@ -62,6 +62,12 @@ backend/writable/debugbar/*
 frontend/writable/debugbar/*
 !frontend/writable/debugbar/index.html
 
+backend/writable/backups/*
+!backend/writable/backups/.gitkeep
+backend/writable/.pgpass
+frontend/node_modules/
+frontend/dist/
+
 php_errors.log
 **/php_errors.log
 

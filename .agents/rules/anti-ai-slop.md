@@ -1,8 +1,8 @@
-# 🛡️ Ultimate Anti-AI-Slop UI/UX Ruleset (AniCine: Anime & Cinema Web Edition)
+# 🛡️ Ultimate Anti-AI-Slop UI/UX Ruleset (AniCine v2.0 — Vue 3 + Tailwind Edition)
 
-> **Catatan Konteks Projek:** Saat ini **AniCine** berjalan dengan fokus *Pure RESTful API Service & Server-to-Server Data Mashup*. Ruleset ini berlaku sebagai **standar wajib apabila pada pengembangan selanjutnya dibuat halaman antarmuka web (Frontend Katalog Anime, Jadwal Bioskop Medan, atau Dashboard Pengujian API)** di dalam `app/Views/**` dan `public/css/**`.
+> **Cakupan Wajib:** Ruleset ini berlaku untuk seluruh pengembangan antarmuka web **AniCine v2.0** di dalam **`frontend/src/**`** (Vue 3 + Vite + Tailwind CSS + `lucide-vue-next`), mencakup halaman Publik, Autentikasi, Pemesanan Tiket & Kursi, Watchlist, hingga Panel Admin.
 
-Ruleset ini menggabungkan standar dari 4 repositori Anti-AI-Slop terbaik:
+Ruleset ini menggabungkan standar dari 4 referensi Anti-AI-Slop terbaik:
 1. **`anthropics/skills` (`frontend-design`)** — *Aesthetic Direction & Subject-Matter Grounding*
 2. **`pbakaus/impeccable`** — *The 5 Hallmark AI-Slop Anti-Patterns*
 3. **`Nutlope/hallmark` (`sloplint`)** — *Macrostructures & Quality Gate Rules*
@@ -11,95 +11,75 @@ Ruleset ini menggabungkan standar dari 4 repositori Anti-AI-Slop terbaik:
 ---
 
 ## 1. The 5 Hallmark "AI Slop" Anti-Patterns (DILARANG KERAS)
-*(Diadaptasi dari `pbakaus/impeccable`)*
 
-AI yang dibiarkan tanpa aturan akan selalu jatuh ke probabilitas statistik yang sama. **Dilarang keras menghasilkan 5 pola ini:**
-
-1. **🚫 Inter / Default Sans-Serif di Semua Elemen (`Overused Font Trap`)**
-   - Jangan gunakan `Inter`, `Roboto`, atau `Arial` sekaligus untuk Heading, Judul Film, Body, dan Label Angka tanpa kontras karakter tipografi.
+1. **🚫 Font Default Seragam di Semua Elemen (`Overused Font Trap`)**
+   - Jangan gunakan `Inter`, `Roboto`, atau `Arial` untuk semua elemen. Pertahankan kontras tipografi editorial (`Fraunces` untuk judul display/anime, `Plus Jakarta Sans` untuk UI/body, `JetBrains Mono` untuk kode booking, kursi, dan log).
 2. **🚫 Gradien Ungu-ke-Biru / Neon SaaS (`Purple-to-Blue Gradient Cliché`)**
-   - Dilarang keras memakai `bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500` pada teks judul, tombol utama, atau latar belakang hero. Katalog anime dan jadwal bioskop bukan aplikasi crypto atau B2B AI SaaS.
+   - Dilarang memakai `bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500` pada hero, tombol, atau kartu. AniCine adalah **arsip katalog anime & loket tiket sinema**, bukan template startup AI SaaS.
 3. **🚫 Kartu di Dalam Kartu di Dalam Kartu (`Endless Nested Cards`)**
-   - Hindari membungkus setiap detail anime dan setiap jam tayang dengan `border rounded-xl p-6 shadow-md bg-white` berlapis-lapis. Gunakan *whitespace*, garis pembatas tiket (`divide-y divide-stone-200` atau `border-dashed`), dan pengelompokan per bioskop yang rapi.
+   - Hindari membungkus setiap blok informasi dengan `border rounded-xl p-6 shadow-md bg-white` berlapis-lapis. Gunakan *whitespace* lega, garis pembatas tipis (`divide-y divide-stone-200`), dan aksen garis putus-putus (`border-dashed`) khas potongan tiket bioskop.
 4. **🚫 Teks Abu-Abu Pudar & Kontras Rendah di Atas Poster (`Low-Contrast Typography`)**
    - Jangan menaruh `text-gray-400` di atas latar terang, atau teks putih telanjang di atas poster anime tanpa *scrim/gradient overlay* gelap (`bg-gradient-to-t from-black/85 via-black/35 to-transparent`).
 5. **🚫 Grid 3-Kolom Ikon Kotak Bulat (`The Mechanical Icon Tile Grid`)**
-   - Dilarang membuat section berisi 3 kartu identik yang masing-masing diawali kotak kecil `w-12 h-12 rounded-lg` berisi ikon acak + judul 2 kata + kalimat promosi generik.
+   - Dilarang membuat section marketing generik berisi 3 kotak ikon acak + kalimat promosi klise (*"Cepat & Mudah"*, *"Aman Terpercaya"*). Ganti dengan konten katalog nyata, jadwal tayang Medan, atau data ringkasan aktual.
 
 ---
 
-## 2. Macrostructure & Layout Rules (Khusus Katalog Anime & Jadwal Bioskop)
-*(Diadaptasi dari `Nutlope/hallmark` & `anthropics/frontend-design`)*
+## 2. Macrostructure & Pola Layout Multi-Halaman (Vue 3)
 
-Jangan gunakan urutan kerangka halaman template SaaS (*Centered Hero $\rightarrow$ 3-Card Feature Grid $\rightarrow$ Testimonial $\rightarrow$ CTA Banner*). Gunakan struktur yang sesuai dengan dunia **Katalog Sinema & Eksplorasi Anime** (seperti *Letterboxd*, *TMDB*, *Criterion*, atau *TIX ID*):
+Jangan pernah menggabungkan seluruh aplikasi ke dalam satu halaman panjang. Terapkan struktur per halaman yang selaras dengan dunia **Katalog Sinema & Loket Tiket** (*Letterboxd*, *Criterion*, *TIX ID*):
 
-- **Theatrical Spotlight & Interactive Filter Hero**:
-  - Buka halaman dengan highlight film anime layar lebar yang sedang tayang di bioskop Medan (*Theatrical Anime Spotlight* seperti *Kimi no Na wa.* atau *Sen to Chihiro no Kamikakushi*), langsung disertai **Search & Filter Bar** fungsional (Pencarian Judul `?q=`, Filter Tahun Rilis `/tahun/{tahun}`, dan Toggle *"Sedang Tayang di Bioskop Medan"* `/theatrical`).
-- **Asymmetric / Bento Catalog & Now-Showing Showcase**:
-  - Bedakan hierarki visual antara katalog anime reguler (*TV Series*) dengan 5 *Anime Movie* yang memiliki jadwal tayang aktif di bioskop Medan (`is_theatrical: true`).
-- **Editorial Detail & Cinema Schedule Split Layout**:
-  - Untuk halaman detail anime (`/api/anime/{id}`), gunakan struktur 2 kolom asimetris:
-    - **Kolom Kiri (Info Katalog `db_anitrack`)**: Poster proporsional (`aspect-[2/3]`), judul utama (`title`), judul bahasa Inggris & Jepang (`title_japanese`), skor (`score`), rating usia (`rating_code`), durasi (`duration_min`), daftar genre, dan studio produksi (`studios`).
-    - **Kolom Kanan (Panel Jadwal Bioskop Medan `cinema_showtimes` dari `db_bioskop`)**: Kartu jadwal bergaya tiket sinema yang mengelompokkan penayangan berdasarkan lokasi bioskop di Medan (*Delipark XXI, Sun Plaza Cinepolis, Centre Point XXI, Manhattan XXI, Ringroad*), lengkap dengan tipe studio (`IMAX Laser 2D` / `Regular 2D`), pill jam tayang (`14:00`, `17:30`), harga tiket (`Rp 75.000`), dan indikator sisa kursi (`seats_available / total_capacity`).
-
----
-
-## 3. Aesthetic Direction & Design Tokens (Brand AniCine)
-*(Diadaptasi dari `anthropics/frontend-design` & `ui-ux-pro-max`)*
-
-### A. Tone & Persona Visual: *Editorial Cinema & Curated Anime Archive*
-- **Base Surface (Background)**:
-  - Gunakan *Warm Cinema Paper / Stone Off-White* (`#FAF8F5` atau `bg-stone-50`) untuk area baca katalog, dan *Deep Theater Charcoal* (`#121316` atau `bg-stone-950`) khusus untuk banner *Theatrical Spotlight*.
-- **Elevated Surface (Card / Ticket Stub)**:
-  - `#FFFFFF` dengan border halus (`border-stone-200/80`) dan aksen garis putus-putus (`border-dashed`) khas potongan tiket bioskop pada bagian jadwal tayang.
-- **Primary Brand 1 (Kata *"Ani"*)**:
-  - *Crimson Curtain / Torii Red* (`#BE123C` / `rose-700`) untuk identitas utama dan badge *Theatrical Movie*.
-- **Primary Brand 2 (Kata *"Cine"*)**:
-  - *Deep Slate Ink* (`#1E293B` / `slate-800`) dipadukan dengan *Projector Amber* (`#D97706` / `amber-600`) untuk rating bintang/skor anime (`★ 9.19`) dan sorotan jadwal bioskop.
-- **Status Indicator Colors**:
-  - Kursi Tersedia / Koneksi Online (`EXTERNAL_API` / `LOCAL_FALLBACK`): *Emerald Green* (`#15803D` / `green-700`).
-- **Text Hierarchy**:
-  - Heading: `#1C1917` (`stone-900`)
-  - Body Copy: `#44403C` (`stone-700`)
-  - Metadata / Caption / Japanese Subtitle: `#78716C` (`stone-500`)
-
-### B. Tipografi Berkarakter (Font Pairing)
-1. **Display / Judul Anime (`h1`–`h3`)**:
-   - `'Playfair Display'`, `'Fraunces'`, atau `'Plus Jakarta Sans'` (`font-bold`, `tracking-tight`, `leading-[1.15]`).
-2. **UI / Body / Metadata Jadwal**:
-   - `'Plus Jakarta Sans'` atau `'DM Sans'`, wajib mengaktifkan `tabular-nums` untuk seluruh angka: skor (`9.19`), tahun rilis (`2016`), durasi (`106 min`), jam tayang (`14:00:00`), harga tiket (`Rp 75.000`), dan sisa kursi (`60/60`).
+1. **Beranda (`HomeView.vue`):**
+   - *Theatrical Spotlight Hero* berlatar *Deep Theater Charcoal* (`#121316`) khusus menyoroti **anime yang sedang/akan tayang di bioskop Medan** (`NOW_SHOWING` / `UPCOMING`), disertai akses cepat ke jadwal & katalog lengkap.
+2. **Katalog Anime (`AnimeCatalogView.vue`):**
+   - Baris pencarian & filter bersih (Tipe Media, Genre, Tahun, Urutan) + grid poster seragam `aspect-[2/3]` dengan badge indikator *"Tayang di Medan"* untuk anime yang terpetakan aktif + kontrol paginasi jelas.
+3. **Detail Anime (`AnimeDetailView.vue`):**
+   - Layout 2 kolom asimetris:
+     - **Kolom Kiri:** Poster `aspect-[2/3]`, judul multi-bahasa, skor, rating usia, durasi, genre, studio, sinopsis, dan tombol aksi *"Simpan ke Watchlist"* (mengarahkan ke Login jika Guest).
+     - **Kolom Kanan:** Panel jadwal bioskop Medan bergaya *ticket stub* (dikelompokkan per bioskop & tanggal, tipe studio, jam tayang, harga, sisa kursi, dan tombol langsung *"Pilih Kursi"*).
+4. **Halaman Anime di Bioskop (`CinemaScheduleView.vue`):**
+   - Tab filter **Sedang Tayang (`NOW_SHOWING`)** dan **Akan Tayang (`UPCOMING`)**, filter tanggal & jaringan bioskop Medan. Hanya menampilkan film anime.
+5. **Pemilihan Kursi & Checkout (`SeatBookingView.vue`):**
+   - Visual layar bioskop melengkung minimalis di atas, grid kursi proporsional dengan legenda kontras tinggi:
+     - **Tersedia:** Outline `stone-300` di atas permukaan terang/gelap yang jelas.
+     - **Dipilih:** *Crimson Curtain* (`#BE123C`) teks putih.
+     - **Terisi:** `stone-300`/`stone-700` *disabled* dengan pola/ikon silang jelas (tidak hanya bergantung pada warna untuk aksesibilitas).
+   - Panel ringkasan tiket (*sticky* di desktop, bottom bar di mobile): daftar kursi (`A1, A2`), jumlah tiket, total harga (`tabular-nums`), dan tombol *"Pesan Tiket"* (untuk Guest tampil banner *"Masuk untuk melanjutkan pemesanan"*).
+6. **Tiket Saya (`MyTicketsView.vue`) & Watchlist (`MyWatchlistView.vue`):**
+   - E-ticket bergaya sobekan tiket (*perforated border-dashed*) dengan `booking_code` monospasi (`JetBrains Mono`), status badge jelas (`PENDING` amber, `PAID` emerald, `CANCELLED` stone/rose), serta tombol bayar/batal.
+   - Watchlist dilengkapi ringkasan statistik dari `v_user_stats` (jumlah *Watching, Completed, Mean Score, Episodes*) dan kontrol update progres episode langsung.
+7. **Autentikasi (`LoginView.vue` & `RegisterView.vue`):**
+   - Layout *editorial split* atau kartu terpusat rapi di atas latar *Warm Stone* dengan validasi per field yang jelas (HTTP `422`), tanpa gradien neon.
+8. **Panel Admin (`AdminLayout.vue` & `views/admin/*`):**
+   - Sidebar navigasi ramping (`#121316` atau `#1C1917`), area kerja `#FAF8F5` berdensitas tinggi, tabel data rapi dengan `tabular-nums`, diff JSON `old_data` vs `new_data` yang mudah dibaca pada **Audit Log Viewer**, serta status checksum/readable yang jelas pada **Panel Backup**.
 
 ---
 
-## 4. Kepadatan Informasi Nyata (`High Information Density`)
-Salah satu ciri paling mencolok dari UI buatan AI adalah **isi kartu yang kosong dan mengambang** (hanya judul + kalimat klise *"Tonton anime seru ini di bioskop kesayangan Anda"*).
+## 3. Design Tokens Brand AniCine (Tailwind Theme)
 
-**Setiap komponen Katalog Anime & Jadwal Bioskop WAJIB memuat metadata nyata dari API AniCine:**
-- **Visual Poster**: Poster anime dengan rasio poster film standar (`aspect-[2/3]`), efek transisi halus saat hover (`group-hover:scale-105 transition-transform duration-500 ease-out`).
-- **Metadata Katalog (`db_anitrack`)**:
-  - Badge Tipe & Rating Usia: contoh `Movie` • `PG-13`.
-  - Judul Multi-bahasa: `Kimi no Na wa.` (`Your Name.` / `君の名は。`).
-  - Skor & Studio: `★ 9.19` • `CoMix Wave Films`.
-  - Genre: `Drama, Romance, School, Supernatural`.
-- **Metadata Jadwal Bioskop Medan (`db_bioskop` / `cinema_showtimes`)**:
-  - Nama Bioskop & Kecamatan: contoh `Delipark XXI & IMAX Medan (Medan Barat)`.
-  - Nama & Tipe Studio: contoh `DELIPARK IMAX Studio 1` (`IMAX Laser 2D`).
-  - Tanggal & Jam Tayang: contoh `2026-10-15` • `14:00 WIB` & `17:30 WIB`.
-  - Harga Tiket & Ketersediaan Kursi: contoh `Rp 75.000` • `Tersedia 60 dari 60 kursi`.
+- **Base Surface (Katalog & Panel Kerja):** *Warm Cinema Paper* (`#FAF8F5`)
+- **Dark Theater Surface (Spotlight Hero & Sidebar Admin):** *Deep Theater Charcoal* (`#121316`) & Elevated (`#1A1C20`)
+- **Elevated Card / Ticket Stub:** `#FFFFFF` dengan border halus `rgba(214, 211, 209, 0.85)` (`border-stone-200`)
+- **Primary Brand (*"Ani"*):** *Crimson Curtain* (`#BE123C`, hover `#9F1239`, soft `#FFE4E6`)
+- **Secondary Brand (*"Cine"*):** *Deep Slate Ink* (`#1E293B`) + *Projector Amber* (`#D97706`, soft `#FEF3C7`) untuk skor bintang & status *Pending*
+- **Status Positive (Tersedia / Paid / Online / Verified):** *Emerald* (`#15803D`, soft `#DCFCE7`)
+- **Text Hierarchy:** Heading `#1C1917`, Body `#44403C`, Muted `#78716C`
+- **Tipografi:**
+  - Display: `'Fraunces', Georgia, serif`
+  - UI/Body: `'Plus Jakarta Sans', sans-serif` + wajib `tabular-nums` untuk skor, tahun, durasi, jam tayang, harga tiket, kursi, dan angka metrik
+  - Monospace: `'JetBrains Mono', monospace` untuk `booking_code`, nama file `.dump`, dan inspeksi JSON `audit_log`
 
 ---
 
-## 5. Checklist `Sloplint` (Wajib Diperiksa Sebelum Menulis Kode UI)
-*(Diadaptasi dari `Nutlope/hallmark` `sloplint.mjs`)*
+## 4. Checklist `Sloplint` (Wajib Lulus di Setiap Halaman Vue)
 
-Jika membuat atau memodifikasi file View (`app/Views/...`), pastikan 10 poin ini **LULUS**:
-1. **[ ] Tidak ada dua tombol Primary (filled) bersebelahan**: Jika ada 2 tombol aksi, satu harus *Primary* (solid fill) dan satu lagi *Secondary/Ghost* (outline atau teks).
-2. **[ ] Tidak ada placeholder gradien kosong**: Gunakan `image_url` atau `poster_path` nyata dari database, lengkap dengan fallback poster sinema yang rapi jika URL gambar kosong.
-3. **[ ] Tidak ada spam Emoji sebagai pengganti ikon UI**: Jangan menaruh emoji (🚀, ✨, 🔥, 🌟) di judul section atau navigasi. Gunakan SVG inline bersih (Lucide / Heroicons dengan `stroke-width="1.75"`).
-4. **[ ] Kontras teks di atas poster terjamin**: Setiap badge atau teks di atas poster wajib dilapisi gradient overlay gelap (`from-black/80 via-black/30 to-transparent`) atau berada di dalam pill solid.
-5. **[ ] Copywriting bebas bahasa promosi AI**: Hapus kata-kata klise seperti *"Platform revolusioner"*, *"Pengalaman menonton tak terlupakan"*, *"Solusi terdepan"*. Gunakan bahasa informatif yang merujuk langsung pada data katalog anime dan jadwal bioskop Medan.
-6. **[ ] Radius sudut konsisten**: Gunakan skala konsisten (misal: `rounded-2xl` untuk kontainer kartu luar, `rounded-xl` untuk poster/elemen dalam, `rounded-lg` untuk tombol/pill jam tayang).
-7. **[ ] Semua state interaktif terdefinisi**: Setiap tombol, filter, pill jam tayang, dan kartu anime wajib memiliki state `:hover`, `:focus-visible`, dan `:active` yang jelas.
-8. **[ ] Alignment & Grid disiplin**: Poster anime memiliki rasio seragam (`aspect-[2/3]`), dan tinggi kartu dalam satu baris grid sejajar (`flex flex-col justify-between h-full`).
-9. **[ ] Angka menggunakan `tabular-nums`**: Skor (`9.19`), harga tiket (`Rp 75.000`), jam tayang (`14:00`), dan kapasitas kursi (`60/60`) menggunakan `tabular-nums` agar rapi saat dipindai mata.
-10. **[ ] Responsif tanpa overflow horizontal**: Pastikan layout di layar mobile (`375px`) tidak bocor ke samping dan grid menyusut dengan proporsional.
+1. **[ ] Tidak ada dua tombol Primary (filled) bersebelahan**: Pasangkan 1 tombol Primary (`#BE123C`) dengan 1 Secondary/Outline atau Ghost.
+2. **[ ] Tidak ada placeholder gradien kosong**: Gunakan `image_url`/`poster_path` nyata dengan komponen fallback poster sinema SVG yang rapi.
+3. **[ ] Tidak ada spam Emoji sebagai pengganti ikon UI**: Gunakan ikon dari **`lucide-vue-next`** dengan `stroke-width="1.75"` secara konsisten.
+4. **[ ] Kontras teks di atas poster terjamin**: Wajib dilapisi *gradient overlay* gelap atau pill solid.
+5. **[ ] Copywriting bebas bahasa promosi AI**: Gunakan Bahasa Indonesia informatif yang merujuk langsung pada data katalog, jadwal Medan, kursi, dan status transaksi.
+6. **[ ] Radius sudut konsisten**: `rounded-2xl` (kontainer utama), `rounded-xl` (poster/kartu dalam), `rounded-lg` (tombol/pill jadwal/kursi).
+7. **[ ] Semua state interaktif & loading terdefinisi**: Sertakan `:hover`, `:focus-visible`, `:active`, `:disabled`, *skeleton loading*, dan *empty/error state* yang jelas.
+8. **[ ] Alignment & Grid disiplin**: Poster selalu `aspect-[2/3]`, tinggi kartu dalam satu baris grid sejajar (`flex flex-col justify-between h-full`).
+9. **[ ] Angka selalu menggunakan `tabular-nums`**: Skor, harga tiket (`Rp 75.000`), jam tayang (`14:00 WIB`), kapasitas (`60/60`), dan statistik admin.
+10. **[ ] Responsif tanpa overflow horizontal**: Teruji rapi dari mobile (`375px`) hingga desktop (`1440px`), termasuk tabel admin (`overflow-x-auto`) dan peta kursi.

@@ -1,92 +1,112 @@
-# AGENTS.md — AniCine: Anime & Cinema Schedule Integration (Tugas Client-Server)
+# AGENTS.md — AniCine v2.0: Anime Catalog & Cinema Ticket Booking Platform
 
 Dokumen ini adalah panduan utama (*Single Source of Truth*) untuk seluruh AI Coding Agent (**Antigravity**, **Claude Code**, dan **OpenAI CODEX**) yang bekerja di repositori ini.
 
 ---
 
 ## 0. Dokumen Acuan Wajib (Baca Sebelum Menulis Kode)
-1. **[`arsitektur_dan_rancangan_projek.md`](arsitektur_dan_rancangan_projek.md)** — Dokumentasi arsitektur **AniCine** (terpisah `backend/` & `frontend/`), diagram alur *Client-Server & Data Mashup*, integrasi `db_anitrack` (Brian) + `db_bioskop` (Sat), daftar endpoint lengkap, dan contoh payload JSON.
-2. **[`.agents/rules/clean-code-indonesia.md`](.agents/rules/clean-code-indonesia.md)** — Ruleset wajib **Clean Code Ramah Mahasiswa & Konvensi Hybrid** (kolom DB, JSON key, variabel, dan method mengikuti skema Bahasa Inggris yang sudah ada; komentar, docblock, dan pesan API wajib Bahasa Indonesia).
-3. **[`.agents/rules/anti-ai-slop.md`](.agents/rules/anti-ai-slop.md)** — Ruleset wajib **Anti-AI-Slop UI/UX Design (AniCine Edition)** untuk pembuatan dan modifikasi tampilan antarmuka web di `frontend/app/Views/**`.
+1. **[`arsitektur_dan_rancangan_projek.md`](arsitektur_dan_rancangan_projek.md)** — Spesifikasi lengkap arsitektur **AniCine v2.0**, kepemilikan database (`db_anitrack` milik sendiri vs `db_bioskop` sementara milik partner), ERD, matriks hak akses DB, RLS, Audit Trigger, transaksi ACID booking, spesifikasi REST API `/api/v1/*`, Backup API, halaman Vue 3, dan deployment VM Azure.
+2. **[`.agents/rules/clean-code-indonesia.md`](.agents/rules/clean-code-indonesia.md)** — Ruleset wajib **Clean Code & Konvensi Hybrid** untuk Backend PHP CI4 (`backend/`) dan Frontend Vue 3 (`frontend/`).
+3. **[`.agents/rules/anti-ai-slop.md`](.agents/rules/anti-ai-slop.md)** — Ruleset wajib **Anti-AI-Slop UI/UX Design (AniCine Vue 3 Edition)** untuk seluruh tampilan antarmuka di `frontend/src/**`.
+4. **[`Materi Kuliah Client Server/`](Materi%20Kuliah%20Client%20Server/)** — Acuan standar kualitas *Manajemen Database Client Server (PLMKB502)*: Rubrik Evaluasi K1–K10, Function & Trigger Audit Log, Keamanan Basis Data (Role/GRANT/RLS/SSL), serta Strategi & Praktikum Backup-Restore CI4.
 
 ---
 
-## 1. Konteks & Arsitektur Projek (Terpisah Backend & Frontend)
-- **Nama Projek**: **AniCine** (*Anime & Cinema Schedule Integration*)
-- **Pendekatan**: Arsitektur **Client-Server Terpisah (`backend/` & `frontend/`)** + *Server-to-Server Data Mashup* (*Read-Only Cinema Schedule Aggregation* — fokus pada pertukaran informasi katalog anime & jadwal tayang bioskop Medan).
-- **Tech Stack**:
-  - **Backend (`backend/`)**: PHP 8.2+ dengan **CodeIgniter 4 (CI4)** (`ResourceController`, format respons JSON murni + CORS aktif) pada Port `8080`.
-  - **Frontend (`frontend/`)**: **CodeIgniter 4 (CI4)** khusus **Client Web UI** pada Port `8081`. **Frontend tidak terhubung langsung ke PostgreSQL**; seluruh data diambil melalui HTTP `fetch` ke REST API `backend/` (`ANICINE_BACKEND_API_URL = 'http://localhost:8080'`).
-  - **Database (PostgreSQL Lokal - Port `5432`)**:
-    1. **`db_anitrack`** (Layanan Utama / Brian — grup koneksi `default`, schema `anitrack`):
-       - Menyimpan ribuan katalog anime beserta relasinya (`anime`, `media_type`, `age_rating`, `genre`, `anime_genre`, `company`, `anime_company`, `user_anime_list`).
-    2. **`db_bioskop`** (Layanan Partner / Sat — grup koneksi `bioskop`, schema `public`):
-       - Menyimpan data film, studio bioskop di Medan (*Delipark XXI, Sun Plaza Cinepolis, Centre Point XXI, Manhattan XXI, Ringroad*), dan jadwal tayang (`movies`, `studios`, `showtimes`, `booking_seats`, serta view `v_movies_lengkap_3nf`).
-- **Struktur Direktori & File Utama**:
-  - **`backend/` (Server REST API & Database PostgreSQL — Port `8080`)**:
-    - `backend/app/Controllers/Home.php` — Mengembalikan status JSON Server REST API AniCine.
-    - `backend/app/Controllers/Api/Anime.php` — Endpoint CRUD katalog anime & endpoint integrasi *Data Mashup* (`/api/anime`, `/api/anime/tahun/{tahun}`, `/api/anime/theatrical`, `/api/anime/{id}`).
-    - `backend/app/Controllers/Api/Cinema.php` — Endpoint informasi bioskop partner (`/api/cinema/status`, `/api/cinema/movies`, `/api/cinema/movies/{id}`, `/api/cinema/showtimes`, `/api/cinema/studios`).
-    - `backend/app/Models/AnimeModel.php` — Query builder tabel `anitrack.anime`, validasi input, konstanta `THEATRICAL_MAPPING` (5 Anime Movie), `getTheatricalList()`, dan `getRichDetail()`.
-    - `backend/app/Libraries/CinemaService.php` — Client integrasi *Hybrid* ke layanan bioskop Sat (`EXTERNAL_API` via HTTP `CURLRequest` atau `LOCAL_FALLBACK` ke `db_bioskop` lokal).
-  - **`frontend/` (Client Web UI AniCine — Port `8081`)**:
-    - `frontend/app/Controllers/Home.php` — Me-render halaman antarmuka `anicine_landing.php`.
-    - `frontend/app/Views/anicine_landing.php` — Antarmuka katalog anime & jadwal bioskop Medan yang mengonsumsi REST API dari `backend/` (`http://localhost:8080/api/...`).
-  - **File Pendukung di Root**:
-    - `tambah_anime_ke_bioskop.sql` — Script SQL untuk menyinkronkan 5 Anime Movie beserta jadwal tayangnya ke `db_bioskop`.
-    - `test_api.php` — Script CLI untuk menguji fungsi `AnimeModel` dan `CinemaService` di `backend/`.
-    - `postman/API_AniCine_Integration.postman_collection.json` — Koleksi pengujian endpoint Postman.
+## 1. Visi Produk, Role & Arsitektur Sistem
+- **Nama Projek**: **AniCine** (*Anime Catalog & Cinema Ticket Booking Platform*)
+- **Tujuan Aplikasi**:
+  - Menyajikan **seluruh katalog anime** (`db_anitrack`) secara terbuka kepada pengunjung.
+  - Menampilkan **khusus anime yang sedang tayang (`NOW_SHOWING`) atau akan tayang (`UPCOMING`) di bioskop Medan** (film non-anime dari layanan bioskop partner otomatis disaring dari sisi client).
+  - Memungkinkan pengguna terdaftar memesan **tiket bioskop anime** (pilih jadwal → pilih kursi interaktif → checkout/bayar → e-ticket → batal) dan mengelola **My Anime List / Watchlist & Rating Pribadi**.
+- **3 Peran Pengguna (*RBAC*)**:
+  1. **Guest (Tanpa Login)**: Akses baca katalog anime, detail anime, daftar anime tayang bioskop, jadwal, dan pratinjau kursi. Diarahkan ke Login/Register saat mencoba memesan tiket atau menyimpan watchlist.
+  2. **User (`role: user`, JWT)**: Semua akses Guest + pemesanan tiket bioskop, riwayat e-ticket, pembatalan pesanan, dan manajemen watchlist/rating pribadi.
+  3. **Admin (`role: admin`, JWT)**: Dashboard admin, CRUD katalog anime, manajemen pemetaan anime ↔ bioskop (`anime_cinema_map`), manajemen jadwal (mode fallback), manajemen booking & user, **Audit Log Viewer**, serta **Backup & Verifikasi Database**.
+
+- **Tech Stack & Alokasi Port (Konsisten Lokal & VM Azure)**:
+  - **Backend (`backend/`)**: PHP 8.2+ dengan **CodeIgniter 4 (CI4)** — Pure JSON REST API **`/api/v1/*`** pada **Port `8083`** (tidak bentrok dengan proyek kelompok di VM Azure pada port `8080` & `8082`).
+  - **Frontend (`frontend/`)**: **Vue 3 + Vite + Vue Router 4 + Pinia + Tailwind CSS** (multi-halaman SPA, tidak ada file view monolitik 1 halaman) pada **Port `8084`**. Frontend **tidak pernah** mengakses PostgreSQL secara langsung; seluruh data lewat REST API `backend/` (`VITE_API_BASE_URL`).
+  - **Target Deployment VM Azure (Azure for Students)**:
+    - Spesifikasi: 4 GB RAM, Dual Core, Premium SSD 30 GB (`tmux`, `PHP`, `psql`, `neovim`, `nano`).
+    - Inbound TCP terbuka: Port **`8080–8085`** dan PostgreSQL **`5432`**.
+    - Port terpakai proyek kelompok: `8080` (backend kelompok) & `8082` (frontend kelompok).
+    - **Port AniCine**: **`8083`** (Backend CI4) & **`8084`** (Frontend Vue build `dist/` / preview).
 
 ---
 
-## 2. 🇮🇩 Wajib Patuhi: Clean Code & Konvensi Hybrid Bahasa Indonesia
-Seluruh kode PHP yang ditulis wajib mematuhi **[`.agents/rules/clean-code-indonesia.md`](.agents/rules/clean-code-indonesia.md)**:
-1. **Kolom Database & JSON Key (`snake_case` Bahasa Inggris sesuai Skema)**:
-   - Ikuti skema asli `db_anitrack` dan `db_bioskop` (contoh: `anime_id`, `title`, `duration_min`, `rating_code`, `cinema_movie_id`, `is_theatrical`, `cinema_showtimes`, `showtime_id`, `ticket_price`, `seats_available`).
-2. **Variabel & Method (`camelCase` Bahasa Inggris Deskriptif)**:
-   - Selaras dengan codebase saat ini, gunakan nama berbahasa Inggris yang jelas (contoh: `$movieId`, `$animeOnly`, `$theatricalIds`, `getTheatricalList()`, `getRichDetail()`, `getShowtimes()`, `getMovies()`).
-3. **Komentar, Docblock, Validasi & Pesan API (WAJIB Bahasa Indonesia)**:
-   - Seluruh komentar penjelas (`// ...`), PHPDoc, `$validationMessages`, dan field `message` pada JSON response wajib ditulis dalam Bahasa Indonesia yang mudah dipahami mahasiswa.
-4. **Keterbacaan di Atas Baris Pendek (*Readability over Brevity*)**:
-   - Dilarang memadatkan logika integrasi atau pemanggilan API ke dalam *nested ternary* 1 baris. Gunakan struktur `if/else` dan `try/catch` yang rapi.
+## 2. Kepemilikan Database & Integrasi Partner (`db_anitrack` vs `db_bioskop`)
+1. **`db_anitrack` (Milik Sendiri / Brian — grup `default`, schema `anitrack`)**:
+   - Database utama (*Single Source of Truth* milik AniCine).
+   - Menyimpan katalog anime (`anime`, `media_type`, `age_rating`, `genre`, `company`, dll.), akun pengguna & autentikasi (`app_user`), pemetaan dinamis anime tayang bioskop (`anime_cinema_map`), watchlist (`user_anime_list`, `user_anime_tag`), **catatan pemesanan tiket milik AniCine (`cinema_bookings`)**, dan `audit_log`.
+   - **Seluruh fitur PLMKB502** (user DB *least privilege* `api_anicine`, RLS pada `user_anime_list` & `cinema_bookings`, trigger `fn_audit()`, function PL/pgSQL `fn_hitung_umur()` & `fn_user_status_summary()`, *optimistic locking* `version`, serta backup `pg_dump -Fc` via `r_backup`) **wajib berjalan penuh & mandiri di `db_anitrack`**.
+2. **`db_bioskop` (Milik Partner / Satria — grup `bioskop`, schema `public`, SEMENTARA)**:
+   - Hanya dipakai sementara sebagai **mock / `LOCAL_FALLBACK`** selama REST API buatan Satria belum selesai.
+   - Pada integrasi akhir/produksi, `db_bioskop` lokal **tidak digunakan lagi** — seluruh data bioskop (film, jadwal, peta kursi, reservasi kursi, pembatalan kursi) dikonsumsi melalui HTTP ke **External REST API Partner** via `CinemaService` (`cinema.api.baseURL` di `backend/.env`).
+   - **Aturan Ketat**: Jangan memodifikasi skema inti `db_bioskop` secara invasif agar kompatibel 100% saat beralih ke `EXTERNAL_API`. Seluruh interaksi ke sisi bioskop wajib melewati adapter `App\Libraries\CinemaService` dengan blok `try/catch` yang rapi.
 
 ---
 
-## 3. 🎨 Ruleset Desain "Anti-AI-Slop" (Frontend `frontend/app/Views/**`)
-Seluruh pengembangan tampilan web wajib mematuhi aturan di **[`.agents/rules/anti-ai-slop.md`](.agents/rules/anti-ai-slop.md)**:
-- Gunakan persona **Editorial Cinema & Curated Anime Archive** (*Warm Stone* `#FAF8F5`, *Crimson Curtain* `#BE123C`, *Projector Amber* `#D97706`).
-- Hindari 5 ciri khas AI Slop (font `Inter` di semua elemen, gradien ungu-biru neon, kartu bersarang berlapis-lapis, kontras rendah di atas poster, dan grid 3 ikon generik).
-- Tampilkan metadata nyata dari API AniCine (`title`, `title_japanese`, `score`, `studios`, serta rincian `cinema_showtimes` per studio bioskop di Medan dengan `tabular-nums`).
+## 3. Standar Keamanan, Database & Evaluasi PLMKB502 (Wajib Dipatuhi)
+1. **Autentikasi JWT & RBAC**:
+   - Gunakan `firebase/php-jwt` + CI4 Filter `jwt` (`App\Filters\JwtFilter`) dengan parameter role (`jwt:user,admin` atau `jwt:admin`).
+   - Request tanpa token valid → **`401 Unauthorized`**; role tidak berhak → **`403 Forbidden`**.
+2. **Keamanan Database (*Least Privilege* & RLS)**:
+   - Aplikasi backend di produksi/VM Azure **dilarang** terhubung dengan akun superuser `postgres`; gunakan akun khusus aplikasi **`api_anicine`** (LOGIN, `CONNECTION LIMIT`, tanpa `SUPERUSER`/`CREATEDB`/`BYPASSRLS`) yang diatur lewat `backend/database/security_setup.sql`.
+   - Teruskan identitas user ke sesi transaksi PostgreSQL via `SELECT set_config('app.user_id', ?, true)` dan `SELECT set_config('app.user_role', ?, true)` agar **Row Level Security (RLS)** dan kolom `app_user` di `audit_log` bekerja akurat.
+   - Karena port `5432` terbuka di VM Azure, konfigurasi `pg_hba.conf` wajib menggunakan `scram-sha-256` (+ `hostssl` bila SSL aktif), dilarang keras memakai `trust` atau `md5`.
+3. **Audit Log & Objek Database**:
+   - Trigger generik `anitrack.fn_audit()` (`SECURITY DEFINER`, `SET search_path = anitrack, public`) wajib mencatat perubahan `INSERT/UPDATE/DELETE` ke `anitrack.audit_log`. Hak `UPDATE, DELETE, TRUNCATE` pada `audit_log` wajib dicabut dari `PUBLIC`.
+4. **Transaksi ACID & Konkurensi**:
+   - Pemesanan kursi wajib menggunakan transaksi ACID + *row locking* (`SELECT ... FOR UPDATE`) + constraint `UNIQUE (showtime_id, seat_id)` (pada fallback) / respons konflik API partner → kembalikan **`409 Conflict`** jika kursi sudah diambil pengguna lain, dan rollback penuh bila salah satu langkah gagal.
+   - Pembaruan data katalog (`anime`) dan pemetaan (`anime_cinema_map`) oleh Admin wajib menerapkan *optimistic locking* (`version`).
+5. **Validasi, Format Respons & Rate Limiting**:
+   - Format JSON seragam: `{ "status": 200, "message": "...", "data": ..., "pager"?: ..., "errors"?: ... }`.
+   - Input tidak valid → **`422 Unprocessable Entity`** dengan pesan Bahasa Indonesia; jangan pernah membocorkan stack trace server.
+   - Aktifkan CI4 `Throttler` (*rate limiting*) pada endpoint sensitif (`auth/login`, `auth/register`, `bookings`, `backups`).
+   - Seluruh query wajib menggunakan Query Builder / Query Binding (`?`) / `$db->prepare()` (anti SQL Injection).
+6. **Backup & Verifikasi Database (Admin Only)**:
+   - Gunakan `App\Services\BackupService` + akun DB read-only `r_backup` (`pg_read_all_data`, `BYPASSRLS`, `PGPASSFILE`) menyimpan ke `writable/backups/` (di luar `public/`).
+   - Wajib gunakan `escapeshellarg()` dan whitelist regex nama file (anti *path traversal*).
+   - Endpoint hanya `GET /api/v1/backups`, `POST /api/v1/backups`, `GET /api/v1/backups/{name}/verify` (`filter: jwt:admin`). **Dilarang** membuka endpoint restore atau download file dump publik lewat HTTP.
+   - Sediakan CLI `php spark backup:run` serta skrip `scripts/backup.sh` dan `scripts/verify.sh` untuk cron.
 
 ---
 
-## 4. ⚙️ Standar Coding, Pemisahan Client-Server, PostgreSQL & Keamanan CI4
-1. **Disiplin Pemisahan Backend vs Frontend**:
-   - **`backend/`** hanya mengembalikan respons JSON (`ResourceController` / `setJSON`), tidak me-render halaman HTML.
-   - **`frontend/`** tidak mengakses PostgreSQL secara langsung; seluruh data diambil melalui REST API `backend/`.
-2. **Kompatibilitas PostgreSQL & Multi-Schema (di `backend/`)**:
-   - Koneksi `default` mengarah ke `db_anitrack` dengan `schema = 'anitrack'`, sedangkan koneksi `bioskop` mengarah ke `db_bioskop` dengan `schema = 'public'`.
-   - Pastikan callback `emptyStringToNull` tetap berjalan di `AnimeModel`.
-3. **Ketahanan Integrasi (*Graceful Fallback*)**:
-   - Selalu bungkus pemanggilan `CinemaService` di dalam blok `try/catch` agar kegagalan layanan partner tidak menyebabkan error `500`.
+## 4. Konvensi Kode & UI/UX
+- **Clean Code Hybrid** ([`.agents/rules/clean-code-indonesia.md`](.agents/rules/clean-code-indonesia.md)):
+  - Kolom DB & JSON key: `snake_case` Bahasa Inggris sesuai skema.
+  - Variabel, method PHP & fungsi JS/Vue: `camelCase` Bahasa Inggris deskriptif; nama komponen Vue: `PascalCase`.
+  - Komentar, PHPDoc/JSDoc, validasi, label UI, & `message` API: **wajib Bahasa Indonesia**.
+  - Prioritaskan keterbacaan (*Readability over Brevity*) dan hindari *over-engineering*.
+- **Anti-AI-Slop UI/UX** ([`.agents/rules/anti-ai-slop.md`](.agents/rules/anti-ai-slop.md)):
+  - Persona **Editorial Cinema & Curated Anime Archive** (*Warm Stone* `#FAF8F5`, *Deep Charcoal* `#121316`, *Crimson Curtain* `#BE123C`, *Projector Amber* `#D97706`).
+  - Tipografi: `Fraunces` (Display), `Plus Jakarta Sans` (UI/Body + `tabular-nums`), `JetBrains Mono` (Kode booking/API).
+  - Wajib lolos 10 checklist `Sloplint` dan tidak boleh menggabungkan seluruh halaman ke dalam satu file raksasa.
 
 ---
 
 ## 5. Perintah Terminal (CLI)
 ```bash
-# 0. Membuat Skema & Mengisi Data Awal (db_anitrack + db_bioskop)
+# 1. Migrasi & Seeder Database (dari folder backend/)
 cd backend
 php spark migrate
 php spark db:seed AniCineSeeder
 
-# 1. Menjalankan Server Backend REST API (Port 8080)
+# 2. Menjalankan Backend REST API v1 (Port 8083 — Lokal & VM Azure)
 cd backend
-php spark serve --port 8081
+php spark serve --host 0.0.0.0 --port 8083
 
-# 2. Menjalankan Aplikasi Client Frontend Web (Port 8081)
+# 3. Menjalankan Frontend Vue 3 (Port 8084 — Mode Development)
 cd frontend
-php spark serve --port 8082
+npm install
+npm run dev -- --host 0.0.0.0 --port 8084
 
-# 3. Menjalankan pengujian cepat integrasi AnimeModel + CinemaService via CLI (dari root)
-php test_api.php
+# 4. Build & Jalankan Frontend Produksi Hemat RAM di VM Azure (Port 8084)
+cd frontend
+npm run build
+npm run preview -- --host 0.0.0.0 --port 8084
+
+# 5. Menjalankan Backup Otomatis via Spark CLI (dari folder backend/)
+cd backend
+php spark backup:run
 ```
