@@ -1,49 +1,64 @@
 #--------------------------------------------------------------------
-# Example Environment Configuration file (AniCine Backend REST API)
+# Example Environment Configuration file — AniCine v2.0 Backend API
+# Salin ke .env lalu sesuaikan kredensial lokal atau VM Azure Anda.
 #--------------------------------------------------------------------
 
 #--------------------------------------------------------------------
 # ENVIRONMENT
 #--------------------------------------------------------------------
-
-# CI_ENVIRONMENT = development
-
-#--------------------------------------------------------------------
-# APP (Backend Server - Port 8081)
-#--------------------------------------------------------------------
-
-# app.baseURL = 'http://70.153.136.38:8081/'
+CI_ENVIRONMENT = development
 
 #--------------------------------------------------------------------
-# DATABASE UTAMA: db_anitrack (PostgreSQL Lokal)
+# APP (Backend REST API v1 — Port 8083 Lokal & VM Azure)
 #--------------------------------------------------------------------
-
-# database.default.hostname = 70.153.136.38
-# database.default.database = db_anitrack
-# database.default.username = fann_user
-# database.default.password = (Hubungi Admin)
-# database.default.DBDriver = Postgre
-# database.default.DBPrefix =
-# database.default.port     = 5432
-# database.default.schema   = anitrack
-# database.default.charset  = utf8
+app.baseURL = 'http://localhost:8083/'
 
 #--------------------------------------------------------------------
-# DATABASE BIOSKOP PARTNER: db_bioskop (PostgreSQL Lokal / Fallback)
+# DATABASE UTAMA: db_anitrack (Milik Sendiri — Akun Least Privilege)
+# Catatan: Gunakan akun `postgres` hanya saat menjalankan migrasi/seeder,
+# lalu gunakan `api_anicine` untuk runtime aplikasi agar RLS aktif penuh.
 #--------------------------------------------------------------------
-
-# database.bioskop.hostname = 70.153.136.38
-# database.bioskop.database = db_bioskop
-# database.bioskop.username = fann_user
-# database.bioskop.password = (Hubungi Admin)
-# database.bioskop.DBDriver = Postgre
-# database.bioskop.port     = 5432
-# database.bioskop.schema   = public
-# database.bioskop.charset  = utf8
+database.default.hostname = localhost
+database.default.database = db_anitrack
+database.default.username = api_anicine
+database.default.password = GantiDenganPasswordKuat
+database.default.DBDriver = Postgre
+database.default.DBPrefix =
+database.default.port     = 5432
+database.default.schema   = anitrack
+database.default.charset  = utf8
 
 #--------------------------------------------------------------------
-# CINEMA EXTERNAL API (Partner Sat)
-# Kosongkan jika menggunakan database lokal db_bioskop.
+# DATABASE BIOSKOP PARTNER: db_bioskop (Sementara / Mode LOCAL_FALLBACK)
+# Hanya dipakai jika server REST API Satria (cinema.api.baseURL) belum aktif.
 #--------------------------------------------------------------------
+database.bioskop.hostname = localhost
+database.bioskop.database = db_bioskop
+database.bioskop.username = postgres
+database.bioskop.password = GantiDenganPasswordLokal
+database.bioskop.DBDriver = Postgre
+database.bioskop.port     = 5432
+database.bioskop.schema   = public
+database.bioskop.charset  = utf8
 
-# cinema.api.baseURL = ''
+#--------------------------------------------------------------------
+# CINEMA EXTERNAL REST API (Target Produksi — Partner Satria)
+# Isi dengan base URL REST API buatan Satria jika sudah tersedia.
+#--------------------------------------------------------------------
+cinema.api.baseURL = ''
+
+#--------------------------------------------------------------------
+# AUTENTIKASI JWT & CORS
+#--------------------------------------------------------------------
+jwt.secret = 'ganti-dengan-minimal-64-karakter-acak-rahasia-anicine-v2'
+jwt.ttl    = 86400
+cors.allowedOrigins = 'http://localhost:8084'
+
+#--------------------------------------------------------------------
+# BACKUP POSTGRESQL (Admin Only — Akun Read-Only r_backup + .pgpass)
+#--------------------------------------------------------------------
+backup.host   = localhost
+backup.port   = 5432
+backup.user   = r_backup
+backup.db     = db_anitrack
+backup.pgpass = '/home/user/.pgpass'

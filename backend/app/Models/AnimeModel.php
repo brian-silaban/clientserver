@@ -4,9 +4,13 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
+/**
+ * AnimeModel
+ * Mengelola katalog anime pada `db_anitrack` (schema `anitrack`) serta membaca
+ * pemetaan tayang dinamis dari view `anitrack.v_anime_theatrical` dan tabel `anitrack.anime_cinema_map`.
+ */
 class AnimeModel extends Model
 {
-    // Schema "anitrack" diatur lewat database.default.schema di .env (search_path)
     protected $table         = 'anime';
     protected $primaryKey    = 'anime_id';
     protected $returnType    = 'array';
@@ -17,16 +21,14 @@ class AnimeModel extends Model
         'score', 'scored_by', 'score_rank', 'popularity',
         'members', 'favorites', 'background',
         'premiered_season', 'premiered_year', 'broadcast',
+        'version',
     ];
 
-    // Tabel anime tidak memiliki kolom created_at & updated_at
     protected $useTimestamps = false;
 
-    // String kosong "" diubah menjadi NULL agar tidak error di kolom integer/date PostgreSQL
     protected $beforeInsert = ['emptyStringToNull'];
     protected $beforeUpdate = ['emptyStringToNull'];
 
-    // Validasi dijalankan otomatis saat insert() dan update()
     protected $validationRules = [
         'anime_id'         => 'permit_empty|is_natural_no_zero',
         'title'            => 'required|max_length[255]|is_unique[anime.title,anime_id,{anime_id}]',
@@ -51,6 +53,7 @@ class AnimeModel extends Model
         'premiered_season' => 'permit_empty|in_list[Winter,Spring,Summer,Fall]',
         'premiered_year'   => 'permit_empty|integer|greater_than_equal_to[1900]|less_than_equal_to[2100]',
         'broadcast'        => 'permit_empty|max_length[50]',
+        'version'          => 'permit_empty|is_natural_no_zero',
     ];
 
     protected $validationMessages = [
@@ -61,7 +64,7 @@ class AnimeModel extends Model
         ],
         'image_url' => ['valid_url_strict' => 'Format image_url tidak valid (harus diawali http:// atau https://).'],
         'type_id'   => [
-            'required'           => 'Tipe (type_id) wajib diisi.',
+            'required'           => 'Tipe media (type_id) wajib diisi.',
             'is_natural_no_zero' => 'type_id harus berupa angka positif.',
             'is_not_unique'      => 'type_id tidak terdaftar di tabel media_type.',
         ],
@@ -74,9 +77,9 @@ class AnimeModel extends Model
             'is_not_unique'      => 'rating_id tidak terdaftar di tabel age_rating.',
         ],
         'score' => [
-            'decimal'               => 'Score harus berupa angka.',
-            'greater_than_equal_to' => 'Score minimal 0.',
-            'less_than_equal_to'    => 'Score maksimal 10.',
+            'decimal'               => 'Skor harus berupa angka.',
+            'greater_than_equal_to' => 'Skor minimal 0.',
+            'less_than_equal_to'    => 'Skor maksimal 10.',
         ],
         'premiered_season' => ['in_list' => 'Season harus salah satu dari: Winter, Spring, Summer, Fall.'],
         'premiered_year'   => [
@@ -99,51 +102,28 @@ class AnimeModel extends Model
         return $data;
     }
 
-    public const THEATRICAL_MAPPING = [
-        32281 => 372058, // Kimi no Na wa.
-        28851 => 378064, // Koe no Katachi
-        199   => 129,    // Sen to Chihiro no Kamikakushi (Spirited Away)
-        21469 => 266396, // Stand By Me Doraemon
-        31490 => 376044, // One Piece Film: Gold
-    ];
-
     /**
-     * Mengambil daftar anime movie yang sedang tayang di bioskop.
+     * Mengambil daftar anime yang sedang tayang (NOW_SHOWING) atau akan tayang (UPCOMING)
+     * secara dinamis dari view `anitrack.v_anime_theatrical`.
      */
-    public function getTheatricalList(): array
+    public function getTheatricalList(?string $statusFilter = null): array
     {
-        $theatricalIds = array_keys(self::THEATRICAL_MAPPING);
+        $sql    = 'SELECT * FROM anitrack.v_anime_theatrical ';
+        $params = [];
 
-        $builder = $this->builder()
-            ->select('
-                anime.anime_id,
-                anime.title,
-                anime.title_english,
-                anime.title_japanese,
-                anime.image_url,
-                anime.duration_min,
-                anime.score,
-                anime.score_rank,
-                anime.popularity,
-                anime.background,
-                mt.type_name,
-                ar.rating_code,
-                STRING_AGG(DISTINCT g.genre_name, \', \' ORDER BY g.genre_name) AS genres,
-                STRING_AGG(DISTINCT c.company_name, \', \' ORDER BY c.company_name) AS studios
-            ')
-            ->join('anitrack.media_type mt', 'anime.type_id = mt.type_id', 'left')
-            ->join('anitrack.age_rating ar', 'anime.rating_id = ar.rating_id', 'left')
-            ->join('anitrack.anime_genre ag', 'anime.anime_id = ag.anime_id', 'left')
-            ->join('anitrack.genre g', 'ag.genre_id = g.genre_id', 'left')
-            ->join('anitrack.anime_company ac', 'anime.anime_id = ac.anime_id', 'left')
-            ->join('anitrack.company c', 'ac.company_id = c.company_id', 'left')
-            ->whereIn('anime.anime_id', $theatricalIds)
-            ->groupBy('anime.anime_id, mt.type_name, ar.rating_code');
+        if ($statusFilter !== null && in_array($statusFilter, ['NOW_SHOWING', 'UPCOMING'], true)) {
+            $sql .= 'WHERE screening_status = ? ';
+            $params[] = $statusFilter;
+        }
 
-        $rows = $builder->get()->getResultArray();
+        $sql .= 'ORDER BY is_featured DESC, CASE WHEN screening_status = \'NOW_SHOWING\' THEN 0 ELSE 1 END, score DESC NULLS LAST';
+
+        $rows = $this->db->query($sql, $params)->getResultArray();
 
         foreach ($rows as &$row) {
-            $row['cinema_movie_id'] = self::THEATRICAL_MAPPING[(int) $row['anime_id']] ?? null;
+            $row['anime_id']        = (int) $row['anime_id'];
+            $row['cinema_movie_id'] = (int) $row['cinema_movie_id'];
+            $row['is_featured']     = ($row['is_featured'] === true || $row['is_featured'] === 't');
             $row['is_theatrical']   = true;
         }
         unset($row);
@@ -152,37 +132,77 @@ class AnimeModel extends Model
     }
 
     /**
-     * Mengambil data detail lengkap satu anime beserta relasi type, rating usia, genre, dan studio.
+     * Mengambil detail lengkap satu anime beserta relasi tipe, rating usia, genre, studio,
+     * dan status pemetaan bioskop dari `anitrack.anime_cinema_map`.
      */
     public function getRichDetail(int $animeId): ?array
     {
-        $builder = $this->builder()
-            ->select('
-                anime.*,
+        $sql = <<<'SQL'
+            SELECT
+                a.*,
                 mt.type_name,
                 ar.rating_code,
                 ar.description AS rating_description,
-                STRING_AGG(DISTINCT g.genre_name, \', \' ORDER BY g.genre_name) AS genres,
-                STRING_AGG(DISTINCT c.company_name, \', \' ORDER BY c.company_name) AS studios
-            ')
-            ->join('anitrack.media_type mt', 'anime.type_id = mt.type_id', 'left')
-            ->join('anitrack.age_rating ar', 'anime.rating_id = ar.rating_id', 'left')
-            ->join('anitrack.anime_genre ag', 'anime.anime_id = ag.anime_id', 'left')
-            ->join('anitrack.genre g', 'ag.genre_id = g.genre_id', 'left')
-            ->join('anitrack.anime_company ac', 'anime.anime_id = ac.anime_id', 'left')
-            ->join('anitrack.company c', 'ac.company_id = c.company_id', 'left')
-            ->where('anime.anime_id', $animeId)
-            ->groupBy('anime.anime_id, mt.type_name, ar.rating_code, ar.description');
+                m.map_id,
+                m.cinema_movie_id,
+                m.screening_status,
+                m.is_featured,
+                m.release_note,
+                (
+                    SELECT string_agg(g.genre_name::text, ', ' ORDER BY g.genre_name::text)
+                    FROM anitrack.anime_genre ag
+                    JOIN anitrack.genre g ON g.genre_id = ag.genre_id
+                    WHERE ag.anime_id = a.anime_id
+                ) AS genres,
+                (
+                    SELECT string_agg(c.company_name::text, ', ' ORDER BY c.company_name::text)
+                    FROM anitrack.anime_company ac
+                    JOIN anitrack.company c ON c.company_id = ac.company_id
+                    WHERE ac.anime_id = a.anime_id AND ac.role = 'studio'
+                ) AS studios
+            FROM anitrack.anime a
+            LEFT JOIN anitrack.media_type mt ON mt.type_id = a.type_id
+            LEFT JOIN anitrack.age_rating ar ON ar.rating_id = a.rating_id
+            LEFT JOIN anitrack.anime_cinema_map m ON m.anime_id = a.anime_id
+            WHERE a.anime_id = ?
+            LIMIT 1
+        SQL;
 
-        $row = $builder->get()->getRowArray();
+        $row = $this->db->query($sql, [$animeId])->getRowArray();
 
         if (! $row) {
             return null;
         }
 
-        $row['cinema_movie_id'] = self::THEATRICAL_MAPPING[$animeId] ?? null;
-        $row['is_theatrical']   = isset(self::THEATRICAL_MAPPING[$animeId]);
+        $screeningStatus        = $row['screening_status'] ?? null;
+        $isActiveTheatrical     = in_array($screeningStatus, ['NOW_SHOWING', 'UPCOMING'], true);
+        $row['anime_id']        = (int) $row['anime_id'];
+        $row['version']         = (int) ($row['version'] ?? 1);
+        $row['cinema_movie_id'] = $row['cinema_movie_id'] !== null ? (int) $row['cinema_movie_id'] : null;
+        $row['is_theatrical']   = $isActiveTheatrical;
+        $row['is_featured']     = ($row['is_featured'] === true || $row['is_featured'] === 't');
 
         return $row;
+    }
+
+    /**
+     * Mengambil metadata dropdown untuk filter katalog (media_types, genres, age_ratings, watch_statuses).
+     */
+    public function getCatalogMeta(): array
+    {
+        return [
+            'media_types' => $this->db->query(
+                'SELECT type_id, type_name FROM anitrack.media_type ORDER BY type_id ASC'
+            )->getResultArray(),
+            'genres' => $this->db->query(
+                'SELECT genre_id, genre_name FROM anitrack.genre ORDER BY genre_name ASC'
+            )->getResultArray(),
+            'age_ratings' => $this->db->query(
+                'SELECT rating_id, rating_code, description FROM anitrack.age_rating ORDER BY rating_id ASC'
+            )->getResultArray(),
+            'watch_statuses' => $this->db->query(
+                'SELECT status_id, status_name FROM anitrack.watch_status ORDER BY status_id ASC'
+            )->getResultArray(),
+        ];
     }
 }
