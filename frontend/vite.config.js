@@ -16,10 +16,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 8084,
     strictPort: true,
+    allowedHosts: ['anicine.vulnera.web.id', '.vulnera.web.id'],
   },
   preview: {
     host: '0.0.0.0',
     port: 8084,
     strictPort: true,
+    allowedHosts: ['anicine.vulnera.web.id', '.vulnera.web.id'],
   },
 });
